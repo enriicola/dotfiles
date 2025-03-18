@@ -8,4 +8,9 @@ for package in "${!void-packages[@]}"; do
    sudo xbps-install -S $package
 done
 
+for package in ${!void-packages[@]}; do
+   sudo xbps-install -Sy ${void-packages[$package]}
+done
+
+
 git config --global init.defaultBranch main
