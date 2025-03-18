@@ -2,6 +2,8 @@
 
 # sudo xbps-install -Sy curl
 
+sudo xbps-install -Syu
+
 void_packages=(
    "git"
    "wget"
@@ -12,6 +14,9 @@ void_packages=(
    "vpm"
    "fzf"
    "github-cli"
+   "trash-cli"
+   "tmux"
+   "unzip"
 )
 
 for package in "${void_packages[@]}"; do
@@ -22,3 +27,5 @@ fi
 done
 
 git config --global init.defaultBranch main
+
+# https://github.com/ohmyzsh/ohmyzsh/wiki/Installing-ZSH
