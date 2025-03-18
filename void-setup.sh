@@ -1,10 +1,9 @@
 #!/bin/bash
 
-sudo xbps-install git
-git config --global init.defaultBranch main
+sudo xbps-install -Sy curl
 
 void-packages=(
-   "curl"
+   "git"
    "wget"
    "htop"
    "neofetch"
@@ -18,3 +17,5 @@ void-packages=(
 for package in "${void-packages[@]}"; do
    sudo xbps-install -S $package
 done
+
+git config --global init.defaultBranch main
