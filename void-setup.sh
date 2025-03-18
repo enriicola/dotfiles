@@ -4,7 +4,7 @@ sudo xbps-install -Sy curl
 
 void-packages=("git" "wget" "htop" "neofetch" "fastfetch" "btop" "vpm" "fzf" "github-cli")
     
-for package in "${void-packages[@]}"; do
+for package in "${!void-packages[@]}"; do
    sudo xbps-install -S $package
 done
 
