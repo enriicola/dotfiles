@@ -1,1 +1,1 @@
-sudo sed -i 's/^GETTY_ARGS=.*/GETTY_ARGS="--no-clear -n -o enriicola"/' /etc/sv/agetty-tty1/conf
+sudo sed -i 's/^[[:space:]]*GETTY_ARGS=.*/GETTY_ARGS="--no-clear -n -o enriicola"/' /etc/sv/agetty-tty1/conf
