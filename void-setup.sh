@@ -1,5 +1,8 @@
 #!/bin/bash
 
+red="\e[31m"
+end="\e[0m"
+
 # sudo xbps-install -Sy curl
 
 sudo xbps-install -Syu
@@ -12,6 +15,7 @@ void_packages=(
    "fastfetch"
    "btop"
    "vpm"
+   "xrandr"
    "fzf"
    "github-cli"
    "trash-cli"
@@ -26,18 +30,25 @@ void_packages=(
    "xorg"
    "xinit"
    "ddcutil"
+   "handbrake"
+   "vscode"
 )
+
 
 for package in "${void_packages[@]}"; do
    if ! sudo xbps-install -Sy "$package"; then
-      echo "Failed to install $package"
+      echo -e "${red}Error installing $package${end}"
       exit 1
 fi
 done
 
 git config --global init.defaultBranch main
+# git config --global user.email "enriicola@proton.me"
+# git config --global user.name "enriicola"
 
 # TODO install a browser cli compatible for "gh auth login"
+
+# gh auth login
 
 # https://github.com/ohmyzsh/ohmyzsh/wiki/Installing-ZSH
 
@@ -45,9 +56,17 @@ git config --global init.defaultBranch main
 
 # TODO install atuin
 
+# TODO install python
+
+# TODO install pip
+
 # TODO install zoxide
 
+# TODO install auto-cpu-freq
+
 # TODO configure xmonad
+
+# TODO setup sudoers for ddcutil, reboot and poweroff
 
 # TODO install smt for night shift for warmer colors at night
 
@@ -55,7 +74,22 @@ git config --global init.defaultBranch main
 
 # TODO autostart xinit (& xmonad ?)
 
-# TODO change grub to automatically select void 
+sudo sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=0/' /etc/default/grub
+if [[ $? -ne 0 ]]; then
+   echo -e "${red}Error changing GRUB_TIMEOUT${end}"
+   exit 1
+fi
+sudo update-grub
+if [[ $? -ne 0 ]]; then
+   echo -e "${red}Error updating GRUB${end}"
+   exit 1
+fi
+
+
+
+
+
+
 
 # TODO change grup to automatically choose enriicola user (?)
 
