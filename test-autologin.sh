@@ -1,5 +1,5 @@
-echo ciao
+echo "..."
 
-sudo sed -i 's/^GETTY_ARGS=.*/GETTY_ARGS="--no-clear -n -o enriicola"/' /etc/sv/agetty-tty1/conf
+sudo sed -i 's/^\t\tGETTY_ARGS=.*/\t\tGETTY_ARGS="--no-clear -n -o enriicola"/' /etc/sv/agetty-tty1/conf
 
-echo ciao
+echo "..."
