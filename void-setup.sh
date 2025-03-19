@@ -25,10 +25,6 @@ void_packages=(
    "yazi"
    "pdfarranger"
    "cmatrix"
-   "xmonad"
-   "xmonad-contrib"
-   "xorg"
-   "xinit"
    "ddcutil"
    "handbrake"
    "vscode"
@@ -52,6 +48,9 @@ git config --global init.defaultBranch main
 
 # https://github.com/ohmyzsh/ohmyzsh/wiki/Installing-ZSH
 
+# TODO install xmonad and its requirements/dependencies
+# https://xmonad.org/INSTALL.html
+   
 # TODO install oh-my-zsh
 
 # TODO install atuin
