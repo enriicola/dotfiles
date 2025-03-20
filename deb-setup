@@ -10,4 +10,6 @@ echo 'eval "$(starship init bash)"' >> ~/.bashrc
 curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
 echo 'eval "$(zoxide init bash)"' >> ~/.bashrc
 
-  curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh
+curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh
+
+source ~/.bashrc
