@@ -12,3 +12,13 @@ echo 'eval "$(zoxide init bash)"' >> ~/.bashrc
 curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh
 
 source ~/.bashrc
+
+
+# install vagrant
+wget -O - https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+sudo apt update && sudo apt install vagrant
+
+vagrant plugin install vagrant-vmware-desktop --plugin-version 3.0.1
+
+# https://support.broadcom.com/group/ecx/productdownloads?subfamily=VMware+Workstation+Pro&tab=Solutions
