@@ -2,8 +2,7 @@ export PATH="$HOME/.local/bin:$PATH"
 
 sudo apt update && sudo apt upgrade
 
-sudo apt install -y curl gh git snapd gnome-tweaks flatpak fzf zoxide
-
+sudo apt install -y curl gh git snapd gnome-tweaks flatpak fzf zoxide gcc-12 libgcc-12-dev build-essential
 curl -sS https://starship.rs/install.sh | sh
 echo 'eval "$(starship init bash)"' >> ~/.bashrc
 
