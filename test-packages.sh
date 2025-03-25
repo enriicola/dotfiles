@@ -23,7 +23,7 @@
 
 URL="https://raw.githubusercontent.com/enriicola/dotfiles/main/packages.txt"
 
-FILE_CONTENT=$(curl -s "$URL")
+FILE_CONTENT=$(wget -qO - "$URL")
 
 # Check if the download was successful
 if [[ $? -ne 0 ]]; then
@@ -33,6 +33,6 @@ fi
 
 # Iterate over each line in the downloaded content
 echo "Contents of the file:"
-for LINE in ${(f)FILE_CONTENT}; do
+echo "$FILE_CONTENT" | while read -r LINE; do
    echo "$LINE"
 done
