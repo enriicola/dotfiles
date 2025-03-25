@@ -48,9 +48,6 @@ git config --global init.defaultBranch main
 
 # https://github.com/ohmyzsh/ohmyzsh/wiki/Installing-ZSH
 
-# TODO install xmonad and its requirements/dependencies
-# https://xmonad.org/INSTALL.html
-   
 # TODO install oh-my-zsh
 
 # TODO install atuin
@@ -63,7 +60,13 @@ git config --global init.defaultBranch main
 
 # TODO install auto-cpu-freq
 
-# TODO configure xmonad
+# TODO install hyprland and dependencies
+# TODO add keybindings for ddcutil
+#	super b +- -> my_script.sh
+#	myscript.sh{
+#		getvcp 10
+#		sevcp @ result +- 5
+#	}
 
 # TODO setup sudoers for ddcutil, reboot and poweroff
 
