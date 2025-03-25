@@ -4,3 +4,4 @@ curl
 wget
 git
 gh
+ghostty
