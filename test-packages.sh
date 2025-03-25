@@ -19,15 +19,20 @@
 
 # echo "All packages have been installed!"
 
-# Download packages.txt from GitHub and install packages
-curl https://raw.githubusercontent.com/enriicola/dotfiles/refs/heads/main/packages.txt | while read package; do
-   # Skip empty lines and comments
-   if [[ -z "$package" || "$package" == \#* ]]; then
-      continue
-   fi
-   
-   echo "Installing $package..."
-   # sudo apt-get install -y "$package"
-done
 
-echo "All packages have been installed!"
+
+URL="https://raw.githubusercontent.com/enriicola/dotfiles/main/packages.txt"
+
+FILE_CONTENT=$(curl -s "$URL")
+
+# Check if the download was successful
+if [[ $? -ne 0 ]]; then
+   echo "Failed to download the file."
+   exit 1
+fi
+
+# Iterate over each line in the downloaded content
+echo "Contents of the file:"
+for LINE in ${(f)FILE_CONTENT}; do
+   echo "$LINE"
+done
