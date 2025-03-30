@@ -1,30 +1,45 @@
 #!/bin/bash
 
-red="\e[31m"
-end="\e[0m"
+readonly RED="\e[31m"
+readonly END="\e[0m"
+readonly URL="https://raw.githubusercontent.com/enriicola/dotfiles/main/packages.txt"
 
-# sudo xbps-install -Sy curl
 
 sudo xbps-install -Syu
 
-URL="https://raw.githubusercontent.com/enriicola/dotfiles/main/packages.txt"
 
-FILE_CONTENT=$(wget -qO - "$URL")
+PACKAGES=$(wget -qO - "$URL")
 if [[ $? -ne 0 ]]; then
-   echo -e "${red}Failed to download the file.${end}"
+   echo -e "${RED}Failed to download the file.${END}"
+   exit 1
+fi
+echo "$PACKAGES" | while read -r LINE; do
+   if ! sudo xbps-install -Sy "$LINE"; then
+      echo -e "${RED}Error installing $LINE${END}"
+      exit 1
+   fi
+done
+
+
+git config --global init.defaultBranch main
+git config --global user.email "enriicola@proton.me"
+git config --global user.name "enriicola"
+git config --global core.editor "nvim"
+git config --global pull.rebase false
+git config --global credential.helper store
+
+
+sudo sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=0/' /etc/default/grub
+if [[ $? -ne 0 ]]; then
+   echo -e "${RED}Error changing GRUB_TIMEOUT${END}"
+   exit 1
+fi
+sudo update-grub
+if [[ $? -ne 0 ]]; then
+   echo -e "${RED}Error updating GRUB${END}"
    exit 1
 fi
 
-for package in "${void_packages[@]}"; do
-   if ! sudo xbps-install -Sy "$package"; then
-      echo -e "${red}Error installing $package${end}"
-      exit 1
-fi
-done
-
-git config --global init.defaultBranch main
-# git config --global user.email "enriicola@proton.me"
-# git config --global user.name "enriicola"
 
 # TODO install a browser cli compatible for "gh auth login"
 
@@ -51,21 +66,6 @@ git config --global init.defaultBranch main
 # TODO clone dotfiles from "git clone ..." to .config folder
 
 # TODO autostart xinit (& xmonad ?)
-
-sudo sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=0/' /etc/default/grub
-if [[ $? -ne 0 ]]; then
-   echo -e "${red}Error changing GRUB_TIMEOUT${end}"
-   exit 1
-fi
-sudo update-grub
-if [[ $? -ne 0 ]]; then
-   echo -e "${red}Error updating GRUB${end}"
-   exit 1
-fi
-
-
-
-
 
 # TODO install and setup lazyvim
 
