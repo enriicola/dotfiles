@@ -1,7 +1,0 @@
-vesktop
-nitch
-curl
-wget
-git
-gh
-ghostty
