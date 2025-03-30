@@ -34,5 +34,5 @@ fi
 # Iterate over each line in the downloaded content
 echo "Contents of the file:"
 echo "$FILE_CONTENT" | while read -r LINE; do
-   echo "$LINE"
+   echo "ciao $LINE"
 done
