@@ -123,6 +123,3 @@ fi
    # TODO add keybinding for moving windows between workspaces
    # TODO add keybinding for moving windows between monitors or workspaces
    # TODO add keybinding for moving windows to a specific workspace
-
-
-sudo reboot
