@@ -2,7 +2,7 @@
 
 readonly RED="\e[31m"
 readonly END="\e[0m"
-readonly URL="https://raw.githubusercontent.com/enriicola/dotfiles/main/packages.txt"
+readonly URL="https://raw.githubusercontent.com/enriicola/dotfiles/main/void/packages.txt"
 
 
 sudo xbps-install -Syu
