@@ -8,7 +8,7 @@ readonly URL="https://raw.githubusercontent.com/enriicola/dotfiles/main/packages
 sudo xbps-install -Syu
 
 
-PACKAGES=$(wget -qO - "$URL")
+PACKAGES=$(wget -qO - $URL)
 if [[ $? -ne 0 ]]; then
    echo -e "${RED}Failed to download the file.${END}"
    exit 1
@@ -123,3 +123,6 @@ fi
    # TODO add keybinding for moving windows between workspaces
    # TODO add keybinding for moving windows between monitors or workspaces
    # TODO add keybinding for moving windows to a specific workspace
+
+
+sudo reboot
