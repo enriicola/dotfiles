@@ -1,4 +1,3 @@
-vesktop
 nitch
 curl
 wget
