@@ -8,7 +8,7 @@ readonly URL="https://raw.githubusercontent.com/enriicola/dotfiles/main/void/pac
 sudo xbps-install -Syu
 
 
-PACKAGES=$(wget -qO - $URL)
+PACKAGES=$(curl -H 'Pragma: no-cache' $URL)
 if [[ $? -ne 0 ]]; then
    echo -e "${RED}Failed to download the file.${END}"
    exit 1
