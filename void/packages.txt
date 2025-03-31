@@ -1,7 +1,6 @@
 curl
 wget
 git
-gh
 ghostty
 htop
 fastfetch
