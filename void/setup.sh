@@ -45,8 +45,6 @@ fi
 
 # gh auth login
 
-# https://github.com/ohmyzsh/ohmyzsh/wiki/Installing-ZSH
-
 # TODO install oh-my-zsh
 
 # TODO install atuin
