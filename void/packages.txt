@@ -1,4 +1,5 @@
 curl
+topgrade
 wget
 git
 ghostty

@@ -3,14 +3,21 @@
 readonly RED="\e[31m"
 readonly END="\e[0m"
 readonly URL="https://raw.githubusercontent.com/enriicola/dotfiles/main/void/packages.txt"
+readonly HEADER="Cache-Control: no-cache, no-store"
+# readonly OPTIONS="-Hs"
+readonly PACKAGES=$(curl -H $HEADER $URL)
 
 
 sudo xbps-install -Syu
-
-
-PACKAGES=$(curl -H 'Cache-Control: no-cache, no-store' $URL)
 if [[ $? -ne 0 ]]; then
-   echo -e "${RED}Failed to download the file.${END}"
+   echo -e "${RED}Failed to update${END}"
+   exit 1
+fi
+
+
+# PACKAGES=$(curl -H $HEADER $URL)
+if [[ $? -ne 0 ]]; then
+   echo -e "${RED}Failed to download packages list${END}"
    exit 1
 fi
 echo "$PACKAGES" | while read -r LINE; do
@@ -100,6 +107,9 @@ fi
    # TODO add floating layout
       # TODO add window specific floating keybinding
    # TODO add column layout
+   # TODO add split layout
+   # TODO add keybinding for half screen to the master window
+   # TODO add kb for centering focuses window (maybe also floating it before?)
    # TODO add toggle layout keybinding
    # TODO add toggle borders keybinding
    # TODO add toggle gaps keybinding
