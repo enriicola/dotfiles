@@ -29,6 +29,6 @@ cd vagrant-vmware-desktop/go_src/vagrant-vmware-utility
 go build
 ./vagrant-vmware-utility certificate generate
 
-sudo cp ~/vagrant-vmware-desktop/go_src/vagrant-vmware-utility/certificates/vagrant-utility.* /opt/vagrant-vmware-desktop/certificates/*
+sudo cp ~/vagrant-vmware-desktop/go_src/vagrant-vmware-utility/certificates/vagrant-utility.* /opt/vagrant-vmware-desktop/certificates
 
 sudo ./vagrant-vmware-utility api
