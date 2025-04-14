@@ -1,3 +1,5 @@
+# wget -qO - https://raw.githubusercontent.com/enriicola/dotfiles/refs/heads/main/deb-setup.sh | bash
+
 export PATH="$HOME/.local/bin:$PATH"
 
 sudo apt update && sudo apt upgrade
