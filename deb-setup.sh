@@ -22,3 +22,13 @@ sudo apt update && sudo apt install vagrant
 vagrant plugin install vagrant-vmware-desktop --plugin-version 3.0.1
 
 # https://support.broadcom.com/group/ecx/productdownloads?subfamily=VMware+Workstation+Pro&tab=Solutions
+
+sudo mkdir -p /opt/vagrant-vmware-desktop/certificates/vagrant-utility.client.crt
+git clone https://github.com/hashicorp/vagrant-vmware-desktop.git
+cd vagrant-vmware-desktop/go_src/vagrant-vmware-utility
+go build
+./vagrant-vmware-utility certificate generate
+
+sudo cp ~/vagrant-vmware-desktop/go_src/vagrant-vmware-utility/certificates/vagrant-utility.* /opt/vagrant-vmware-desktop/certificates/*
+
+sudo ./vagrant-vmware-utility api
