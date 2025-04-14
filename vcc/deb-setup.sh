@@ -27,7 +27,7 @@ vagrant plugin install vagrant-vmware-desktop --plugin-version 3.0.1
 sudo ./vcc/VMware-Workstation-Full-17.6.2-24409262.x86_64.bundle
 sudo ./vcc/code_1.99.2-1744250061_amd64.deb
 
-sudo mkdir -p /opt/vagrant-vmware-desktop/certificates/vagrant-utility.client.crt
+sudo mkdir -p /opt/vagrant-vmware-desktop/certificates
 
 git clone https://github.com/hashicorp/vagrant-vmware-desktop.git
 cd vagrant-vmware-desktop/go_src/vagrant-vmware-utility
