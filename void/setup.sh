@@ -90,7 +90,7 @@ fi
 		# spotify
 		# ...
 
-
+# Install .deb pkgs on void https://www.youtube.com/watch?v=uL2FgJLzmCo
 
 # TODO install hyprland and dependencies
    # TODO add keybindings for ddcutil
