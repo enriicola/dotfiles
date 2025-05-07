@@ -54,6 +54,8 @@ fi
 
 # TODO install oh-my-zsh
 
+# https://github.com/dreamsofautonomy/zen-omp
+
 # TODO install atuin
 
 # TODO install python
