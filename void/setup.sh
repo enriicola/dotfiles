@@ -66,6 +66,8 @@ flatpak install flathub com.vivaldi.Vivaldi
 
 # TODO install oh-my-zsh
 
+# https://github.com/dreamsofautonomy/zen-omp
+
 # TODO install atuin
 
 # TODO install python
@@ -102,7 +104,7 @@ flatpak install flathub com.vivaldi.Vivaldi
 		# spotify
 		# ...
 
-
+# Install .deb pkgs on void https://www.youtube.com/watch?v=uL2FgJLzmCo
 
 # TODO niri keybindings
    # TODO add keybindings for ddcutil
