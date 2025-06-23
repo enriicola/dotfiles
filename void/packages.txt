@@ -20,3 +20,5 @@ ddcutil
 handbrake
 vscode
 bat
+niri
+flatpak
