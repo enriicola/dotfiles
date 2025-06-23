@@ -8,6 +8,7 @@ readonly HEADER="Cache-Control: no-cache, no-store"
 readonly PACKAGES=$(curl -H $HEADER $URL)
 
 
+# install and update void
 sudo xbps-install -Syu
 if [[ $? -ne 0 ]]; then
    echo -e "${RED}Failed to update${END}"
@@ -28,6 +29,7 @@ echo "$PACKAGES" | while read -r LINE; do
 done
 
 
+# configure git TODO
 git config --global init.defaultBranch main
 git config --global user.email "enriicola@proton.me"
 git config --global user.name "enriicola"
@@ -36,6 +38,7 @@ git config --global pull.rebase false
 git config --global credential.helper store
 
 
+# set GRUB_TIMEOUT to 0 to skip the boot menu
 sudo sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=0/' /etc/default/grub
 if [[ $? -ne 0 ]]; then
    echo -e "${RED}Error changing GRUB_TIMEOUT${END}"
@@ -48,7 +51,16 @@ if [[ $? -ne 0 ]]; then
 fi
 
 
-# TODO install a browser cli compatible for "gh auth login"
+# add the flathub repository for flatpak
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+
+# install vivaldi via flatpak
+flatpak install flathub com.vivaldi.Vivaldi
+
+
+
+
 
 # gh auth login
 
@@ -92,7 +104,7 @@ fi
 
 
 
-# TODO install hyprland and dependencies
+# TODO niri keybindings
    # TODO add keybindings for ddcutil
    #	super b +- -> my_script.sh
    #	myscript.sh{
