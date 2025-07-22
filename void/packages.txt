@@ -1,4 +1,5 @@
 curl
+cowsay
 topgrade
 wget
 git
@@ -12,7 +13,6 @@ fzf
 github-cli
 trash-cli
 tmux
-unzip
 neovim
 yazi
 cmatrix
@@ -22,3 +22,8 @@ vscode
 bat
 niri
 flatpak
+wofi
+
+void-repo-nonfree
+vivaldi
+droidcam
