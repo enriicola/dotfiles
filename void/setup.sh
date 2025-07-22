@@ -56,7 +56,7 @@ flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.f
 
 
 # install vivaldi via flatpak
-flatpak install flathub com.vivaldi.Vivaldi
+# flatpak install flathub com.vivaldi.Vivaldi
 
 
 
