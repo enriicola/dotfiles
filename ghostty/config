@@ -41,6 +41,6 @@
 # # which is explained in the docs for that config option.
 # # Just for example:
 # resize-overlay-duration = 4s 200ms
-theme = dark:UltraDark,light:GitHub-Light-Default
+theme = light:GitHub-Light-Default,dark:UltraDark
 window-decoration = false
 confirm-close-surface = false
