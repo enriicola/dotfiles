@@ -23,6 +23,8 @@ bat
 niri
 flatpak
 wofi
+ripgrep
+fd
 
 void-repo-nonfree
 vivaldi
