@@ -1,0 +1,73 @@
+#!/bin/sh
+#
+# $Id: cover-watchdog 11112 2014-11-17 18:12:08Z NiLuJe $
+#
+
+# Get hackname from the script's path (NOTE: Will only work for scripts called from /mnt/us/${KH_HACKNAME}/bin)
+KH_HACKNAME="${0##/mnt/us/}"
+KH_HACKNAME="${KH_HACKNAME%%/bin/*}"
+
+# Try to pull our custom helper lib
+_KH_FUNCS="/mnt/us/${KH_HACKNAME}/bin/libkh"
+if [ -f ${_KH_FUNCS} ] ; then
+    . ${_KH_FUNCS}
+else
+    # Pull default helper functions for logging
+    _FUNCTIONS=/etc/rc.d/functions
+    [ -f ${_FUNCTIONS} ] && . ${_FUNCTIONS}
+    # We couldn't get our custom lib, abort
+    msg "couldn't source libkh from '${KH_HACKNAME}'" W
+    exit 0
+fi
+
+# Make sure inotifywait is exec'able
+[ -x ${COVERWD_INWAIT_BIN} ] || chmod +x ${COVERWD_INWAIT_BIN}
+
+# Cleanup on exit...
+cleanup_on_exit()
+{
+    # Remove our pidfile
+    rm -f ${COVER_WATCHDOG_PID}
+
+    # And bow out ;)
+    exit 0
+}
+
+trap cleanup_on_exit EXIT SIGTERM
+
+wd_fail_count=0
+
+# Make sure the watchdog's always up
+while true ; do
+    # Make sure we still have an helper to run, in case it gets wiped while we're running (that shouldn't happen under normal circumstances, but, hey, I've seen logs where it apparently happened...)
+    if [ -x ${COVER_WATCHDOG_HELPER} ] ; then
+        kh_msg "starting cover watchdog (inotifywait)" I
+        # Reset fail counter on success
+        wd_fail_count=0
+        # We listen to the proper file on base-us, because fsp sometimes wreaks havoc on our inotify watches...
+        ${COVERWD_INWAIT_BIN} -m -e modify --format "%e" -t -1 /mnt/base-us/system/com.amazon.ebook.booklet.reader/reader.pref | ${COVER_WATCHDOG_HELPER}
+        # NOTE: Switch to --execute if it one day lands in master? (cf. https://github.com/rvoicilas/inotify-tools/commit/603a5a299af4b5ccfd08e6b9347100dfd59cefa8, has been bit-rotting in the 'next' branch for 4 years...)
+    else
+        # Die in a fire after 3 fails (roughly 15s)
+        if [ $wd_fail_count -gt 3 ] ; then
+            kh_msg "missing helper script, giving up on the cover watchdog" W a "no helper script, give up on cover watchdog"
+            # NOTE: We may be leaving a stale pidfile behind, but our trap, or at worse linkss/linkfonts should take care of it, and that'll pop up in the logs, so don't explicitly remove it now.
+            exit 0
+        fi
+        kh_msg "could not start cover watchdog (missing helper)" W
+        # Increment our failure counter
+        wd_fail_count=$(( wd_fail_count + 1 ))
+    fi
+    # Sleep well... (outside of the if block, because we do want to check that the helper still exists each time...)
+    sleep 5
+    # If inotifywait died or was killed, force a last read check, in case we switched during the sleep...
+    if [ -f "${LINKSS_COVER_EXTRACT}" ] ; then
+        kh_msg "cover watchdog restart, force a check..." W q
+        # Low priority, the convert step is somewhat CPU hungry...
+        nice -n 15 ${LINKSS_COVER_EXTRACT}
+        if [ $? -ne 0 ] ; then
+            # It failed, screensaver might be blank, or innacurate (last successful extract)
+            kh_msg "failed to extract cover, screensaver will be blank or innacurate" W a "failed to extract cover"
+        fi
+    fi
+done

@@ -1,0 +1,131 @@
+#!/bin/sh
+#
+# $Id: shuffless 9447 2013-07-07 03:31:03Z NiLuJe $
+#
+
+# Get hackname from the script's path (NOTE: Will only work for scripts called from /mnt/us/${KH_HACKNAME}/bin)
+KH_HACKNAME="${0##/mnt/us/}"
+KH_HACKNAME="${KH_HACKNAME%%/bin/*}"
+
+# Try to pull our custom helper lib
+_KH_FUNCS="/mnt/us/${KH_HACKNAME}/bin/libkh"
+if [ -f ${_KH_FUNCS} ] ; then
+    . ${_KH_FUNCS}
+else
+    # Pull default helper functions for logging
+    _FUNCTIONS=/etc/rc.d/functions
+    [ -f ${_FUNCTIONS} ] && . ${_FUNCTIONS}
+    # We couldn't get our custom lib, abort
+    msg "couldn't source libkh from '${KH_HACKNAME}'" W
+    exit 0
+fi
+
+is_integer() {
+    [ "$1" -eq "$1" ] > /dev/null 2>&1
+    return $?
+}
+
+# Make sure our various folders exist ;)
+for ss_folder in screensavers overflow cover_cache ; do
+    [ -d "${LINKSS_BASEDIR}/${ss_folder}" ] || mkdir -p "${LINKSS_BASEDIR}/${ss_folder}"
+done
+
+# Are we doing a bootup shuffle, or an auto restart shuffle?
+if [ "$1" == "watchdog" ] ; then
+    trigger_file="shuffle"
+    watchdog_triggered="true"
+else
+    trigger_file="random"
+    watchdog_triggered="false"
+fi
+
+# If we're in cover mode, short-circuit all that, and just try to use our last cover
+if [ -f "${LINKSS_BASEDIR}/cover" ] ; then
+    # If the watchdog triggered us, there's usually no reason to do anything extra, so just go away now ;)
+    if [ "${watchdog_triggered}" == "true" ] ; then
+        kh_msg "nothing to do :)" I q
+        return 0
+    fi
+
+    # Another overkill sanity check...
+    if [ ! -d ${LINKSS_TMPFS_COVERDIR} ] ; then
+        kh_die "couldn't find the cover directory, aborting" a "no cover directory, aborting"
+    fi
+
+    # First thing to do is to clear the target folder, we're always working with a single file in these modes.
+    # Given the fact that we run at boot, and this is a tmpfs, this should be dead/useless code...
+    for file in ${LINKSS_TMPFS_COVERDIR}/* ; do
+        [ -f "${file}" ] && rm -f "${file}"
+    done
+
+    # Make sure our current cover is sane
+    kh_msg "cover mode setup..." I v
+
+    # We don't have a nice way of getting the last cdekey opened like on FW 5.x, so, just kill the last_read marker, and let cover-extract do its thing with reader.pref...
+    [ -f "${LINKSS_BASEDIR}/etc/last_read" ] && rm -f "${LINKSS_BASEDIR}/etc/last_read"
+    nice -n 15 ${LINKSS_COVER_EXTRACT}
+    # If it fails, we'll have to make do with the fallback
+    if [ $? -ne 0 ] ; then
+        # NOTE: We symlink from base-us to avoid a layer of fuse, and since we don't actually write to the userstore, we *should* be safe. That might be a horrible mistake, though ;)
+        ln -sf "${LINKSS_BASEDIR_BASE}/cover_cache/default-${MY_SCREEN_SIZE}.png" "${LINKSS_TMPFS_COVERDIR}/current_book_cover.png"
+    fi
+
+    # We're done :)
+    return 0
+fi
+
+# Randomize screensavers if we asked for it
+if [ -f ${LINKSS_BASEDIR}/${trigger_file} ] ; then
+    # With visible feedback if we were triggered by the watchdog, since it may take some time...
+    if [ "${watchdog_triggered}" == "true" ] ; then
+        kh_msg "shuffling screensavers..." I v
+    else
+        kh_msg "randomizing screensavers" I
+    fi
+
+    # Randomly sort our screensavers
+    [ -x ${LINKSS_BASEDIR}/bin/sort ] || chmod +x ${LINKSS_BASEDIR}/bin/sort
+    sort_index=1
+
+    # Loop through all our sorted custom screensavers, and rename them in order (order that's now random, courtesy of coreutils' sort),
+    # with a fixed-length zero-padded index as a prefix, ie. ${id}_my_super_image.png instead of my_super_image.png
+    IFS_BKP="${IFS}"
+    # We use an invalid character for FAT32 filenames to avoid any problem, because the Kindles crappy shell doesn't like NULL as an IFS...
+    IFS=':'
+    # NOTE: There's some fairly ugly IFS trickery involved in order to work with filenames containing spaces, because we can't rely on the proper
+    # methods available to fix this in a real shell...
+    for ss_file in $( find ${LINKSS_BASEDIR}/screensavers -type f -print0 | ${LINKSS_BASEDIR}/bin/sort -R -z | tr '\0' ':' ) ; do
+        # Not a file? NEEEEXT!
+        [ -f "${ss_file}" ] || continue
+
+        # Handle the zero-padding of our index, to make sure it's always the same length (5 chars) to make non natural order sorting algorithms happy.
+        ss_new_idx="${sort_index}"
+        while [ ${#ss_new_idx} -lt 5 ] ; do
+            ss_new_idx="0${ss_new_idx}"
+        done
+
+        # First, get the basename of our files
+        ss_filename="${ss_file##*/}"
+
+        # Then, try to extract the current index of our file
+        ss_idx="${ss_filename%%_*}"
+
+        # Check if it's really an int, to see if this is the first randomizer round...
+        if is_integer ${ss_idx} ; then
+            # We've already got an index, ditch it, and retrieve our original real filename
+            ss_real_filename="${ss_filename##${ss_idx}_}"
+        else
+            # First run, our full name is our real name
+            ss_real_filename="${ss_filename}"
+        fi
+
+        # And rename our files
+        [ "${ss_filename}" != "${ss_new_idx}_${ss_real_filename}" ] && mv -f "${LINKSS_BASEDIR}/screensavers/${ss_filename}" "${LINKSS_BASEDIR}/screensavers/${ss_new_idx}_${ss_real_filename}"
+
+        # Increment our index
+        sort_index=$(( sort_index + 1 ))
+    done
+    # Restore IFS
+    IFS="${IFS_BKP}"
+    kh_msg "end of screensavers randomizing" I q
+fi

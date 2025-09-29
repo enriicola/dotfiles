@@ -1,0 +1,83 @@
+#!/bin/sh
+#
+# $Id: cover-watchdog-helper 15011 2018-06-02 16:58:21Z NiLuJe $
+#
+
+# Get hackname from the script's path (NOTE: Will only work for scripts called from /mnt/us/${KH_HACKNAME}/bin)
+KH_HACKNAME="${0##/mnt/us/}"
+KH_HACKNAME="${KH_HACKNAME%%/bin/*}"
+
+# Try to pull our custom helper lib
+_KH_FUNCS="/mnt/us/${KH_HACKNAME}/bin/libkh"
+if [ -f ${_KH_FUNCS} ] ; then
+    . ${_KH_FUNCS}
+else
+    # Pull default helper functions for logging
+    _FUNCTIONS=/etc/rc.d/functions
+    [ -f ${_FUNCTIONS} ] && . ${_FUNCTIONS}
+    # We couldn't get our custom lib, abort
+    msg "couldn't source libkh from '${KH_HACKNAME}'" W
+    exit 0
+fi
+
+# Make sure the cover extraction script is exec'able (check if it exists first)
+if [ -f ${LINKSS_COVER_EXTRACT} ] ; then
+    [ -x ${LINKSS_COVER_EXTRACT} ] || chmod +x ${LINKSS_COVER_EXTRACT}
+fi
+# Make sure shlock is exec'able
+[ -x ${COVERWD_LOCK_BIN} ] || chmod +x ${COVERWD_LOCK_BIN}
+# Make sure our lockfile has somewhere to live
+[ -d ${COVERWD_LOCK_DIR} ] || mkdir -p ${COVERWD_LOCK_DIR}
+
+# Try never to leave inotifywait alone...
+cleanup_on_exit()
+{
+    # In case something weird happens, log the signal we trapped
+    trapped_ret="$?"
+    kh_msg "cover helper cleanup (received signal ${trapped_ret})" I q
+
+    # And go kill inotifywait ourselves, because for some reason it doesn't receive a SIGPIPE when we die, and thus hangs there doing nothing useful...
+    if [ -f ${COVER_WATCHDOG_PID} ] ; then
+        for pid in $( cat ${COVER_WATCHDOG_PID} ) ; do
+            # Check that's it's really one of our own process before killing it mercilessly :p
+            if ps -fp ${pid} | grep -q -e "${COVERWD_INWAIT_BIN}" ; then
+                kh_msg "killing cover watchdog process (inotifywait, ${pid})" I q
+                kill -TERM ${pid} 2> /dev/null
+            fi
+        done
+    fi
+
+    # Also, busybox's ash doesn't forward the signal, so we actually want to exit here ;)
+    exit ${trapped_ret}
+}
+
+# NOTE: We trap a whole bunch of signals, because EXIT isn't a catchall like bash with busybox ash...
+trap cleanup_on_exit EXIT SIGTERM SIGPIPE
+
+# Add the PID of our inotifywait to the list of running daemons to kill
+echo "$( pidof inotifywait )" >> ${COVER_WATCHDOG_PID}
+# Add our PID to the list of running daemons to kill
+echo "$$" >> ${COVER_WATCHDOG_PID}
+
+while read line ; do
+    # Yep, we just switched to the reader! Let's do our stuff in a locked session to avoid killing the CPU...
+    if ${COVERWD_LOCK_BIN} -p $$ -f ${COVERWD_LOCK_FILE} ; then
+        # Log our attempt at extracting a cover
+        kh_msg "reader settings changed, trying to extract the cover" I q
+        # Try to extract the cover
+        if [ -f "${LINKSS_COVER_EXTRACT}" ] ; then
+            # Low priority, the convert step is somewhat CPU hungry...
+            nice -n 15 ${LINKSS_COVER_EXTRACT}
+            if [ $? -ne 0 ] ; then
+                # It failed, screensaver might be blank, or innacurate (last successful extract)
+                kh_msg "failed to extract or convert cover, screensaver will be blank or innacurate" W a "failed to process cover"
+            fi
+        fi
+        # And then remove our lock file
+        rm -rf ${COVERWD_LOCK_FILE}
+    else
+        # Meep! We're already locked doing an extract, something went wrong (or we switched to another book pretty fast)...
+        # NOTE: I'm not sure we can even hit this codepath anymore...
+        kh_msg "we're already extracting a cover via the watchdog, go away" W a "cover extract already in progress"
+    fi
+done

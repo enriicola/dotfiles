@@ -1,0 +1,262 @@
+#!/bin/sh
+#
+# $Id: linkss 15011 2018-06-02 16:58:21Z NiLuJe $
+#
+
+# Get hackname from the script's path (NOTE: Will only work for scripts called from /mnt/us/${KH_HACKNAME}/bin)
+KH_HACKNAME="${0##/mnt/us/}"
+KH_HACKNAME="${KH_HACKNAME%%/bin/*}"
+
+# Try to pull our custom helper lib
+_KH_FUNCS="/mnt/us/${KH_HACKNAME}/bin/libkh"
+if [ -f ${_KH_FUNCS} ] ; then
+    . ${_KH_FUNCS}
+else
+    # Pull default helper functions for logging
+    _FUNCTIONS=/etc/rc.d/functions
+    [ -f ${_FUNCTIONS} ] && . ${_FUNCTIONS}
+    # We couldn't get our custom lib, abort
+    msg "couldn't source libkh from '${KH_HACKNAME}'" W
+    exit 0
+fi
+
+if [ -f ${LINKSS_BASEDIR}/backup ] ; then
+    kh_msg "backing up default screensavers" I
+    # Just in case, create our backup dirs
+    [ -d ${LINKSS_BASEDIR}/backups ] || mkdir ${LINKSS_BASEDIR}/backups
+    for kx_size in ${K2_SCREEN_SIZE} ${KDX_SCREEN_SIZE} ; do
+        [ -d ${LINKSS_BASEDIR}/backups/${kx_size} ] || mkdir ${LINKSS_BASEDIR}/backups/${kx_size}
+    done
+
+    # Huh, we asked for a backup!
+    cp -f /etc/prettyversion.txt ${LINKSS_BASEDIR}/backups/prettyversion.txt
+
+    # Handle both k2 & kDX
+    for kx_size in ${K2_SCREEN_SIZE} ${KDX_SCREEN_SIZE} ; do
+        [ -d /opt/amazon/screen_saver/${kx_size} ] && cp -f /opt/amazon/screen_saver/${kx_size}/* ${LINKSS_BASEDIR}/backups/${kx_size}/
+    done
+
+    # And do it only once ;)
+    rm -f ${LINKSS_BASEDIR}/backup
+fi
+
+# Sanity check... Don't do anything if the screensavers dir is empty (...unless we're in cover mode ;))
+if [ ! -f "${LINKSS_BASEDIR}/cover" ] ; then
+    [ -d ${LINKSS_BASEDIR}/screensavers -a "x$( ls -A ${LINKSS_BASEDIR}/screensavers 2> /dev/null )" != x ] || kh_die "we don't have any custom screensavers, aborting" a "no screensavers, aborting"
+fi
+
+# Clean our custom screensavers directory to avoid weird bugs
+# Let's delete the Windows thumbs.db file if it's there.
+[ -f ${LINKSS_BASEDIR}/screensavers/thumbs.db ] && rm -f ${LINKSS_BASEDIR}/screensavers/thumbs.db
+# Or windows folder config file if it's there.
+[ -f ${LINKSS_BASEDIR}/screensavers/Desktop.ini ] && rm -f ${LINKSS_BASEDIR}/screensavers/Desktop.ini
+# And mac's folder config file.
+[ -f ${LINKSS_BASEDIR}/screensavers/.DS_Store ] && rm -f ${LINKSS_BASEDIR}/screensavers/.DS_Store
+# And those pesky mac ._ files.
+for macthumb in ${LINKSS_BASEDIR}/screensavers/._* ; do
+    [ -f "${macthumb}" ] && rm -f "${macthumb}"
+done
+
+# If we're in cover mode, we'll use a tmpfs based mount point to avoid unnecessary IO.
+# Also, we create our own instead of using /var/tmp to avoid OOS issues on /var/tmp in case something goes wrong on our end...
+# And we create it right now so that shuffless has something to work on for the sanitization process.
+if [ -f ${LINKSS_BASEDIR}/cover ] ; then
+    # We create it in a tmpfs, so we need to create our target directory
+    [ -d ${LINKSS_TMPFS_BASEDIR} ] || mkdir -p ${LINKSS_TMPFS_BASEDIR}
+
+    # Don't mount twice & handle crashes... We may have a leftover mount state file
+    if ! grep -q "^tmpfs ${LINKSS_TMPFS_BASEDIR}" /proc/mounts ; then
+        kh_msg "mounting screensavers tmpfs" I
+        # We shouldn't ever need more than a couple MB of space at worst, but go with 8 for safety, or to handle crazy large covers
+        mount -t tmpfs -o size=4M tmpfs ${LINKSS_TMPFS_BASEDIR}
+
+        # It's a tmpfs, so we need to create our directory structure
+        mkdir -p ${LINKSS_TMPFS_CACHE}
+        mkdir -p ${LINKSS_TMPFS_COVERDIR}
+
+        # Let our stop script know that we've got things to unmount
+        touch ${LINKSS_BASEDIR}/mounted_tmpfs
+    else
+        kh_msg "looks like the screensavers tmpfs is already mounted" W a "screensavers tmpfs already mounted"
+        # Make sure it's still flagged
+        touch ${LINKSS_BASEDIR}/mounted_tmpfs
+    fi
+fi
+
+# Sanity checks, in case the install is inconsistent
+if [ -f ${LINKSS_SHUFFLE} ] ; then
+    # Make sure it's exec'able
+    [ -x ${LINKSS_SHUFFLE} ] || chmod +x ${LINKSS_SHUFFLE}
+    # Randomize screensavers if we asked for it
+    ${LINKSS_SHUFFLE}
+fi
+
+# Handle both k2 & kDX
+for kx_size in ${K2_SCREEN_SIZE} ${KDX_SCREEN_SIZE} ; do
+    # If it's not our actual screen size, skip
+    if [ "${kx_size}" != "${MY_SCREEN_SIZE}" ] ; then
+        kh_msg "our screen resolution isn't ${kx_size}, skipping" I q
+        continue
+    fi
+
+    # Use a slighty less long indicator than the resolution in the eips messages, to alleviate our limited screen estate...
+    if [ "${kx_size}" == "${KDX_SCREEN_SIZE}" ] ; then
+        screen_tag="dx"
+    else
+        screen_tag="k2"
+    fi
+
+    # Make sure that size is actually valid on our system, in case we got a buggy screen size var
+    if [ -d /opt/amazon/screen_saver/${kx_size} ] ; then
+        # Handle the cover mode, where we mount from a tmpfs
+        if [ -f ${LINKSS_BASEDIR}/mounted_tmpfs ] ; then
+            # Don't mount twice & handle crashes... We may have a leftover mount state file
+            if ! grep -q "^tmpfs /opt/amazon/screen_saver/${kx_size}" /proc/mounts ; then
+                kh_msg "mounting custom ${screen_tag} screensavers from tmpfs" I
+                mount --bind ${LINKSS_TMPFS_COVERDIR} /opt/amazon/screen_saver/${kx_size}
+
+                # Let our stop script know that we've got things to unmount
+                touch ${LINKSS_BASEDIR}/mounted_${kx_size}_tmpfs
+            else
+                kh_msg "looks like the custom ${screen_tag} screensavers are already mounted from tmpfs" W a "tmpfs ${screen_tag} screensavers already mounted"
+                # Make sure it's still flagged
+                touch ${LINKSS_BASEDIR}/mounted_${kx_size}_tmpfs
+            fi
+        else
+            # Don't mount twice & handle crashes... We may have a leftover mount state file
+            if ! grep -q "^fsp /opt/amazon/screen_saver/${kx_size}" /proc/mounts ; then
+                kh_msg "mounting custom ${screen_tag} screensavers" I
+                mount --bind ${LINKSS_BASEDIR}/screensavers /opt/amazon/screen_saver/${kx_size}
+
+                # Let our stop script know that we've got things to unmount
+                touch ${LINKSS_BASEDIR}/mounted_${kx_size}
+            else
+                kh_msg "looks like the custom ${screen_tag} screensavers are already mounted" W a "${screen_tag} screensavers already mounted"
+                # Make sure it's still flagged
+                touch ${LINKSS_BASEDIR}/mounted_${kx_size}
+            fi
+        fi
+    fi
+done
+
+# If needed (ie. hack applied, and linkfonts watchdog not already up), launch our litle usb unplug watchdog
+if [ -f ${LINKSS_BASEDIR}/mounted_${K2_SCREEN_SIZE} -o -f ${LINKSS_BASEDIR}/mounted_${KDX_SCREEN_SIZE} -o -f ${LINKSS_BASEDIR}/mounted_${K2_SCREEN_SIZE}_tmpfs -o -f ${LINKSS_BASEDIR}/mounted_${KDX_SCREEN_SIZE}_tmpfs ] ; then
+    # Launch our little watchdog to catch the usb unplug event, but make it optionnal (and don't launch it if linkfonts' already up)
+    if [ -f ${LINKSS_BASEDIR}/autoreboot -a ! -f ${LINKFONTS_BASEDIR}/autoreboot ] ; then
+        # Avoid running multiple watchdogs by cleaning up somewhat forcefully...
+        # Handle crashes, and runlevel switches... We may have a leftover pidfile with stale pids, so take care of it ourselves (start-stop-daemon doesn't check if the daemon's alive)
+        if [ -f ${WATCHDOG_PID} ] ; then
+            for pid in $( cat ${WATCHDOG_PID} ) ; do
+                # If we do indeed have one, then check it's content, and kill everything pertaining to the watchdog, to avoid having part of the trio running without the others
+                if ps -fp ${pid} | grep -q -e "${WATCHDOG_DAEMON}" -e "usbPlugOut" -e "${WATCHDOG_HELPER}" ; then
+                    kh_msg "killing stale USB watchdog (${pid})" W
+                    kill -TERM ${pid} 2> /dev/null
+                fi
+            done
+            # And then remove the pidfile
+            [ -f ${WATCHDOG_PID} ] && rm -f ${WATCHDOG_PID}
+        fi
+        # Make sure our watchdog scripts are there
+        if [ -f ${WATCHDOG_DAEMON} -a -f ${WATCHDOG_HELPER} ] ; then
+            # Make sure they're executable
+            [ -x ${WATCHDOG_DAEMON} ] || chmod +x ${WATCHDOG_DAEMON}
+            [ -x ${WATCHDOG_HELPER} ] || chmod +x ${WATCHDOG_HELPER}
+            # And finally, run it
+            kh_msg "launching usb watchdog" I q
+            /sbin/start-stop-daemon -m -q -p ${WATCHDOG_PID} -x ${WATCHDOG_DAEMON} -S -b
+        fi
+    fi
+fi
+
+# Same thing for the cover watchdog
+if [ -f ${LINKSS_BASEDIR}/mounted_${K2_SCREEN_SIZE} -o -f ${LINKSS_BASEDIR}/mounted_${KDX_SCREEN_SIZE} -o -f ${LINKSS_BASEDIR}/mounted_${K2_SCREEN_SIZE}_tmpfs -o -f ${LINKSS_BASEDIR}/mounted_${KDX_SCREEN_SIZE}_tmpfs ] ; then
+    # Launch our little watchdog to catch the switch to reader booklet event, but make it optionnal
+    if [ -f ${LINKSS_BASEDIR}/cover ] ; then
+        # Avoid running multiple watchdogs by cleaning up somewhat forcefully...
+        # Handle crashes, and runlevel switches... We may have a leftover pidfile with stale pids, so take care of it ourselves (start-stop-daemon doesn't check if the daemon's alive)
+        if [ -f ${COVER_WATCHDOG_PID} ] ; then
+            for pid in $( cat ${COVER_WATCHDOG_PID} ) ; do
+                # If we do indeed have one, then check its content, and kill everything pertaining to the watchdog, to avoid having part of the trio running without the others
+                if ps -fp ${pid} | grep -q -e "${COVER_WATCHDOG_DAEMON}" -e "${COVERWD_INWAIT_BIN}" -e "${COVER_WATCHDOG_HELPER}" ; then
+                    kh_msg "killing stale cover watchdog (${pid})" W
+                    kill -TERM ${pid} 2> /dev/null
+                fi
+            done
+            # And then remove the pidfile
+            [ -f ${COVER_WATCHDOG_PID} ] && rm -f ${COVER_WATCHDOG_PID}
+        fi
+        # Make sure our watchdog scripts are there
+        if [ -f ${COVER_WATCHDOG_DAEMON} -a -f ${COVER_WATCHDOG_HELPER} ] ; then
+            # Make sure they're executable
+            [ -x ${COVER_WATCHDOG_DAEMON} ] || chmod +x ${COVER_WATCHDOG_DAEMON}
+            [ -x ${COVER_WATCHDOG_HELPER} ] || chmod +x ${COVER_WATCHDOG_HELPER}
+            # And finally, run it
+            kh_msg "launching cover watchdog" I q
+            /sbin/start-stop-daemon -m -q -p ${COVER_WATCHDOG_PID} -x ${COVER_WATCHDOG_DAEMON} -S -b
+        fi
+
+        # And the other one, the one that forces our current screensaver to workaround weird caching issues on some (all?) devices...
+        # Avoid running multiple watchdogs by cleaning up somewhat forcefully...
+        # Handle crashes, and runlevel switches... We may have a leftover pidfile with stale pids, so take care of it ourselves (start-stop-daemon doesn't check if the daemon's alive)
+        if [ -f ${SS_WATCHDOG_PID} ] ; then
+            for pid in $( cat ${SS_WATCHDOG_PID} ) ; do
+                # If we do indeed have one, then check it's content, and kill everything pertaining to the watchdog, to avoid having part of the trio running without the others
+                if ps -fp ${pid} | grep -q -e "${SS_WATCHDOG_DAEMON}" -e "goingToScreenSaver" -e "${SS_WATCHDOG_HELPER}" ; then
+                    kh_msg "killing stale SS watchdog (${pid})" W
+                    kill -TERM ${pid} 2> /dev/null
+                fi
+            done
+            # And then remove the pidfile
+            [ -f ${SS_WATCHDOG_PID} ] && rm -f ${SS_WATCHDOG_PID}
+        fi
+        # Make sure our watchdog scripts are there
+        if [ -f ${SS_WATCHDOG_DAEMON} -a -f ${SS_WATCHDOG_HELPER} ] ; then
+            # Make sure they're executable
+            [ -x ${SS_WATCHDOG_DAEMON} ] || chmod +x ${SS_WATCHDOG_DAEMON}
+            [ -x ${SS_WATCHDOG_HELPER} ] || chmod +x ${SS_WATCHDOG_HELPER}
+            # And finally, run it
+            kh_msg "launching SS watchdog" I q
+            /sbin/start-stop-daemon -m -q -p ${SS_WATCHDOG_PID} -x ${SS_WATCHDOG_DAEMON} -S -b
+        fi
+
+        # And the next one too, that takes care of resetting the inotify watches when we get back from USBMS... (If we don't, inotifywait hangs and doesn't report any new event when coming back from USBMS...)
+        # Avoid running multiple watchdogs by cleaning up somewhat forcefully...
+        # Handle crashes, and runlevel switches... We may have a leftover pidfile with stale pids, so take care of it ourselves (start-stop-daemon doesn't check if the daemon's alive)
+        if [ -f ${US_WATCHDOG_PID} ] ; then
+            for pid in $( cat ${US_WATCHDOG_PID} ) ; do
+                # If we do indeed have one, then check it's content, and kill everything pertaining to the watchdog, to avoid having part of the trio running without the others
+                if ps -fp ${pid} | grep -q -e "${US_WATCHDOG_DAEMON}" -e "userstoreAvailable" -e "${US_WATCHDOG_HELPER}" ; then
+                    kh_msg "killing stale userstore watchdog (${pid})" W
+                    kill -TERM ${pid} 2> /dev/null
+                fi
+            done
+            # And then remove the pidfile
+            [ -f ${US_WATCHDOG_PID} ] && rm -f ${US_WATCHDOG_PID}
+        fi
+        # Make sure our watchdog scripts are there
+        if [ -f ${US_WATCHDOG_DAEMON} -a -f ${US_WATCHDOG_HELPER} ] ; then
+            # Make sure they're executable
+            [ -x ${US_WATCHDOG_DAEMON} ] || chmod +x ${US_WATCHDOG_DAEMON}
+            [ -x ${US_WATCHDOG_HELPER} ] || chmod +x ${US_WATCHDOG_HELPER}
+            # And finally, run it
+            kh_msg "launching userstore watchdog" I q
+            /sbin/start-stop-daemon -m -q -p ${US_WATCHDOG_PID} -x ${US_WATCHDOG_DAEMON} -S -b
+        fi
+    fi
+fi
+
+# Do we want a custom version tag?
+if [ -f ${LINKSS_BASEDIR}/etc/prettyversion.txt ] ; then
+    # Don't mount twice & handle crashes... We may have a leftover mount state file
+    if ! grep -q "^fsp /etc/prettyversion.txt" /proc/mounts ; then
+        kh_msg "mounting custom version tag" I
+        mount --bind ${LINKSS_BASEDIR}/etc/prettyversion.txt /etc/prettyversion.txt
+
+        # Let our stop script know that we've got things to unmount
+        touch ${LINKSS_BASEDIR}/ver_mounted
+    else
+        kh_msg "looks like a custom version tag is already mounted" W a "version tag already mounted"
+        # Make sure it's still flagged
+        touch ${LINKSS_BASEDIR}/ver_mounted
+    fi
+fi
