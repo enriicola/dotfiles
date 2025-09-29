@@ -1,0 +1,221 @@
+#!/bin/sh
+#
+# $Id: cover-extract 17594 2020-07-29 03:29:26Z NiLuJe $
+#
+
+# Get hackname from the script's path (NOTE: Will only work for scripts called from /mnt/us/${KH_HACKNAME}/bin)
+KH_HACKNAME="${0##/mnt/us/}"
+KH_HACKNAME="${KH_HACKNAME%%/bin/*}"
+
+# Try to pull our custom helper lib
+_KH_FUNCS="/mnt/us/${KH_HACKNAME}/bin/libkh"
+if [ -f ${_KH_FUNCS} ] ; then
+    . ${_KH_FUNCS}
+else
+    # Pull default helper functions for logging
+    _FUNCTIONS=/etc/rc.d/functions
+    [ -f ${_FUNCTIONS} ] && . ${_FUNCTIONS}
+    # We couldn't get our custom lib, abort
+    msg "couldn't source libkh from '${KH_HACKNAME}'" W
+    exit 0
+fi
+
+# First of all, check if we have Python installed...
+if [ ! -f "${PYTHON}" ] ; then
+    kh_msg "python isn't installed, aborting..." W q
+    return 1
+fi
+
+# Get the filename of the last book opened...
+reader_pref_result="$(grep 'LAST_BOOK_READ' /mnt/base-us/system/com.amazon.ebook.booklet.reader/reader.pref)"
+
+# Check if it was successful...
+if [ $? -ne 0 ] ; then
+    kh_msg "couldn't get the location of the last book opened, aborting..." W q
+    return 1
+fi
+
+# Split it to get the filename...
+last_read_file="${reader_pref_result#LAST_BOOK_READ=*}"
+
+# Poor man's cache, to avoid useless parsing on settings change (or sometimes on open, it's not particularly pretty what happens to this poor settings file...)
+# Try to get the name of the last file read from the previous trigger...
+if [ -f "${LINKSS_BASEDIR}/etc/last_read" ] ; then
+    previous_last_read="$(cat "${LINKSS_BASEDIR}/etc/last_read")"
+else
+    previous_last_read=""
+fi
+
+# Then write the current one
+echo "${last_read_file}" > "${LINKSS_BASEDIR}/etc/last_read"
+
+# If the file didn't change, go away :)
+if [ "${previous_last_read}" == "${last_read_file}" ] ; then
+    kh_msg "last read file didn't change, don't do anything" I q
+    return 0
+fi
+
+# Make sure it's a mobi/KF8 file
+last_read_file_ext="${last_read_file##*.}"
+
+# MobiUnpack already does this, but let's avoid calling Python if we can ;)
+case "${last_read_file_ext}" in
+    "mobi" | "prc" | "azw" | "azw3" | "pobi" )
+        kh_msg "file extension is valid" I q
+    ;;
+    "MOBI" | "PRC" | "AZW" | "AZW3" | "pobi" )
+        kh_msg "file extension is uppercase, but valid" I q
+    ;;
+    *)
+        kh_msg "file extension '${last_read_file_ext}' is not supported, aborting..." W q
+        return 1
+    ;;
+esac
+
+# Check that the file exists...
+if [ ! -f "${last_read_file}" ] ; then
+    kh_msg "couldn't open last read file '${last_read_file}', aborting..." W q
+    return 1
+fi
+
+# TODO: Try to do a cache check *NOW*, by just getting the cdekey via MobiUnpack?
+# Or not, our poor man's caching of the last file read might be better than running Python twice...
+
+# Try to extract the cover via our stripped down Kindle Unpack...
+kh_msg "trying to extract cover for ${last_read_file} . . ." I q
+# We're working on a tmpfs, so make sure it's clear beforehand...
+for file in ${LINKSS_TMPFS_CACHE}/* ; do
+    [ -f "${file}" ] && rm -f "${file}"
+done
+
+# NOTE: We're now using a C tool based on libmobi's mobitool instead of KindleUnpack ;).
+#${PYTHON} ${LINKSS_BINDIR}/kindleunpack.py -k "${last_read_file}" "${LINKSS_TMPFS_CACHE}/"
+${LINKSS_BINDIR}/mobicover -k -o "${LINKSS_TMPFS_CACHE}" "${last_read_file}"
+
+# Check if it was successful...
+if [ $? -ne 0 ] ; then
+    kh_msg "couldn't extract cover for '${last_read_file}', aborting..." W q
+    # Clear cache folder, just in case KindleUnpack left something behind...
+    for tmp_raw_cover in ${LINKSS_TMPFS_CACHE}/* ; do
+        [ -f "${tmp_raw_cover}" ] && rm -rf "${tmp_raw_cover}"
+    done
+    return 1
+fi
+
+# Then try to convert it for our device...
+for file in ${LINKSS_TMPFS_CACHE}/cover_raw_*.* ; do
+    if [ -f "${file}" ] ; then
+        # Check key against SQL query result...
+        file_key="${file##*cover_raw_}"
+        file_key="${file_key%.*}"
+
+        # Check if we already have the file in cache...
+        if [ -f "${LINKSS_BASEDIR}/cover_cache/cover_${file_key}.png" ] ; then
+            kh_msg "cache hit for ${file_key} :)" I q
+            # Again, symlink from base-us
+            ln -sf "${LINKSS_BASEDIR_BASE}/cover_cache/cover_${file_key}.png" "${LINKSS_TMPFS_COVERDIR}/current_book_cover.png"
+            # Remove the raw cover now that we're done
+            rm -f "${file}"
+            # Flag the fact that we switched
+            touch "${LINKSS_BASEDIR}/etc/switched_cover"
+            # Neeext!
+            continue
+        fi
+
+        # Setup a few things... (letterbox color)
+        if [ -f "${LINKSS_BASEDIR}/black" ] ; then
+            # We want black borders!
+            lb_bg_color="black"
+        else
+            lb_bg_color="white"
+        fi
+
+        kh_msg "trying to convert ${file} . . ." I q
+        # NOTE: Dither down to the 16 colors the eips screen can show, via a custom colormap (built with IM from a screenshot taken on a book cover, via -unique-colors -scale 1000%).
+        # We force the PNG bitdepth to 8, because eips freaks on 16c PNG files otherwise.
+        # We could use a N9 quality, instead of the defaut N5 (75) because the zlib Z_RLE compression strategy is usually faster, but it's not always the most efficient.
+        # Always use Lanczos (the 'tweaked' Sharp variant), even when upscaling because the default filter when upscaling, Mitchell, is blurrier. [We could also add a slight unsharp after the resize, like -unsharp 0x0.5]
+        # We're using -resize instead of -distort Resize because it's faster (yes, it might also generate less 'clean' images, but it's faster).
+
+        # Default to letterboxing, with correct AR
+        cover_resize_mode="letterbox"
+        # Autocrop (centered)
+        if [ -f "${LINKSS_BASEDIR}/autocrop" ] ; then
+            cover_resize_mode="autocrop"
+        fi
+        # Stretch
+        if [ -f "${LINKSS_BASEDIR}/stretch" ] ; then
+            cover_resize_mode="stretch"
+        fi
+
+        # Allow skipping the dithering step, because it requires a good chunk of memory, and this can be too much under certain circumstances, which can lead to swapping for a good long while (or making the framework restart ;)). If it takes more time than usual to build a cover (because kswapd0 is looping @ 100% CPU), or the framework restarts, try to enable this.
+        if [ -f "${LINKSS_BASEDIR}/lowmem" ] ; then
+            dither_args=""
+        else
+            if [ -f "${LINKSS_BASEDIR}/riemersma" ] ; then
+                dither_algo="Riemersma"
+            else
+                dither_algo="FloydSteinberg"
+            fi
+            # Die in a fire after 60s, to avoid looping like crazy if we're OOM.
+            dither_args="-limit time 60 -dither ${dither_algo} -remap ${LINKSS_BASEDIR}/etc/kindle_colors.gif"
+        fi
+
+        # Make eips happy (it chokes on plain 16c images, it expects a true PNG8 [256c], *with* a 256c colormap)
+        png8_args="-define png:color-type=0 -define png:bit-depth=8"
+        # NOTE: Keep track of the 'skip palette building for Grayscale images' issue (http://www.imagemagick.org/discourse-server/viewtopic.php?f=3&t=27580), because it screws with our workflow in a weird way:
+        #         On 'affected' versions (6.9.1-3 & 6.9.1-4), we don't get a colormap, which screws with eips, and we end up with a TrueColor image, which, besides not being *at all* what we asked for, is larger and takes longer to build,
+        #           and if we specifically ask for -define png:color-type=0, it breaks shit in fun and interesting ways (producing a bitonal image instead of a Grayscale one).
+        #         Note that there seems to be some kind of interaction with our specific workflow, because doing the same thing on a simple convert leads to different, slightly less puzzling, results...
+        #         The nuclear option, -type Grayscale -depth 8 -colors 256 -define png:bit-depth=8, behaves in roughly the same way.
+        # NOTE: If we can't make eips happy, just go with -define png:color-type=3 -define png:bit-depth=4 (16c indexed), at least that'd save some space...
+        # NOTE: Strangely enough, -define png:format=png8, which, in theory, should also do what we (eips, actually) want, ends up building indexed (color-type=3) 8bpp 16c PNGs, *with* a colormap, but without expanding to 256c as supposed...
+
+        # Follow the resize mode the user prefers (stretch, autocrop, or letterbox)
+        case "${cover_resize_mode}" in
+            "stretch" )
+                ${LINKSS_BINDIR}/convert "${file}" -filter LanczosSharp -resize "${MY_SCREEN_SIZE}!" -colorspace Gray ${dither_args} -quality 75 ${png8_args} "${LINKSS_BASEDIR}/cover_cache/cover_${file_key}.png"
+            ;;
+            "autocrop" )
+                ${LINKSS_BINDIR}/convert "${file}" -filter LanczosSharp -resize "${MY_SCREEN_SIZE}^" -gravity center -extent "${MY_SCREEN_SIZE}!" -colorspace Gray ${dither_args} -quality 75 ${png8_args} "${LINKSS_BASEDIR}/cover_cache/cover_${file_key}.png"
+                # NOTE: -resize 1516x -resize 'x2048<' -resize 50% -gravity center -crop 758x1024+0+0 +repage works too, but is ugly as hell and more annoying to implement here ;).
+            ;;
+            * )
+                ${LINKSS_BINDIR}/convert "${file}" -filter LanczosSharp -resize "${MY_SCREEN_SIZE}" -background ${lb_bg_color} -gravity center -extent "${MY_SCREEN_SIZE}!" -colorspace Gray ${dither_args} -quality 75 ${png8_args} "${LINKSS_BASEDIR}/cover_cache/cover_${file_key}.png"
+                # On the off chance that you'd like to use GraphicsMagick:
+                # (It is indeed a tiiiiiny bit faster, doesn't appear to need a patch to the quantize step, but isn't as powerful)
+                #${LINKSS_BINDIR}/gm convert "${file}" -filter Lanczos -resize "${MY_SCREEN_SIZE}" -background ${lb_bg_color} -gravity center -extent "${MY_SCREEN_SIZE}" -colorspace Rec709Luma ${dither_args} -quality 75 ${png8_args} "${LINKSS_BASEDIR}/cover_cache/cover_${file_key}.png"
+                # Where dither_args is (no time limit support, only a single dithering algo, and the remap switch is different):
+                #dither_args="-dither -map ${LINKSS_BASEDIR}/etc/kindle_colors.gif"
+            ;;
+        esac
+
+        conv_ret="$?"
+
+        # Remove the raw cover now that we're done
+        rm -f "${file}"
+
+        # Check if it was successful...
+        if [ ${conv_ret} -ne 0 ] ; then
+            kh_msg "couldn't convert cover for ${file_key}, aborting..." W q
+            return 1
+        else
+            # Stupid extra safety check...
+            if [ -f "${LINKSS_BASEDIR}/cover_cache/cover_${file_key}.png" ] ; then
+                # Good! Set it up!
+                kh_msg "using ${file_key} cover as active screensaver" I q
+                # Symlink from base-us...
+                ln -sf "${LINKSS_BASEDIR_BASE}/cover_cache/cover_${file_key}.png" "${LINKSS_TMPFS_COVERDIR}/current_book_cover.png"
+                # Flag the fact that we switched
+                touch "${LINKSS_BASEDIR}/etc/switched_cover"
+                # This feels dumb, but who knows... Flush FS buffers.
+                sync
+            else
+                kh_msg "couldn't find processed cover for ${file_key}, aborting..." W q
+                return 1
+            fi
+        fi
+    fi
+done
+
+return 0

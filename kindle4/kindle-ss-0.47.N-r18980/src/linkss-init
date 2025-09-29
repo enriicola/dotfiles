@@ -1,0 +1,55 @@
+#!/bin/sh
+#
+# $Id: linkss-init 6548 2010-07-19 22:45:06Z NiLuJe $
+#
+
+_FUNCTIONS=/etc/rc.d/functions
+[ -f ${_FUNCTIONS} ] && . ${_FUNCTIONS}
+
+LINKSS_EMERGENCY="/mnt/us/linkss/bin/emergency.sh"
+LINKSS_ENABLE="/mnt/us/linkss/auto"
+LINKSS_SCRIPT="/mnt/us/linkss/bin/linkss"
+LINKSS_SCRIPT_STOP="/mnt/us/linkss/bin/unlinkss"
+
+case "$1" in
+        start)
+                # First things first, check for an emergency script
+                if [ -f ${LINKSS_EMERGENCY} ] ; then
+                        # We got one, make it executable and use it
+                        [ -x ${LINKSS_EMERGENCY} ] || chmod +x ${LINKSS_EMERGENCY}
+                        # Run it...
+                        msg "starting linkss emergency script" I
+                        ${LINKSS_EMERGENCY}
+                        # And GET OUT! NOW!
+                        exit 0
+                fi
+                # Everything's fine, yeepee.
+                if [ -f ${LINKSS_ENABLE} -a -f ${LINKSS_SCRIPT} ] ; then
+                        # We got our script, and we want to use it, so, make it executable
+                        [ -x ${LINKSS_SCRIPT} ] || chmod +x ${LINKSS_SCRIPT}
+                        # And run it!
+                        msg "starting linkss" I
+                        ${LINKSS_SCRIPT}
+                else
+                        msg "linkss is disabled" I
+                fi
+        ;;
+        stop)
+                # Don't check for the enable trigger, we may have just removed it, so we'll still have to cleanup behind us
+                if [ -f ${LINKSS_SCRIPT_STOP} ] ; then
+                        # We got our script, and we want to use it, so, make it executable
+                        [ -x ${LINKSS_SCRIPT_STOP} ] || chmod +x ${LINKSS_SCRIPT_STOP}
+                        # And run it!
+                        msg "stopping linkss" I
+                        ${LINKSS_SCRIPT_STOP}
+                else
+                        msg "couldn't stop linkss" I
+                fi
+        ;;
+        *)
+                msg "Usage: $0 {start|stop}" W >&2
+                exit 1
+        ;;
+esac
+
+exit 0

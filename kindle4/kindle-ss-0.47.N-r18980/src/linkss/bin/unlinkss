@@ -1,0 +1,163 @@
+#!/bin/sh
+#
+# $Id: unlinkss 15011 2018-06-02 16:58:21Z NiLuJe $
+#
+
+# Get hackname from the script's path (NOTE: Will only work for scripts called from /mnt/us/${KH_HACKNAME}/bin)
+KH_HACKNAME="${0##/mnt/us/}"
+KH_HACKNAME="${KH_HACKNAME%%/bin/*}"
+
+# Try to pull our custom helper lib
+_KH_FUNCS="/mnt/us/${KH_HACKNAME}/bin/libkh"
+if [ -f ${_KH_FUNCS} ] ; then
+    . ${_KH_FUNCS}
+else
+    # Pull default helper functions for logging
+    _FUNCTIONS=/etc/rc.d/functions
+    [ -f ${_FUNCTIONS} ] && . ${_FUNCTIONS}
+    # We couldn't get our custom lib, abort
+    msg "couldn't source libkh from '${KH_HACKNAME}'" W
+    exit 0
+fi
+
+## Trap official update files if we find any...
+## Use the jailbreak's hack whitelist, if we have it
+#if [ -f "${LINKJAIL_BASEDIR}/etc/whitelist" ] ; then
+#    wl_hack_list="$( cat "${LINKJAIL_BASEDIR}/etc/whitelist" )"
+#else
+#    # If we don't, use a hard-coded list
+#    wl_hack_list="update_jailbreak update_python update_ss update_fonts update_dummy update_usbnetwork update_sstimeout update_font_pkg Update_DK update_dk update_duokan update_unduokan update_adqdevkeys update_launchpad update_disable-autoupdates update_nolog update_freedownload update_keybru update_physkeyb update_updates-provider update_loc_ru update_loc_cz update_loc_pl update_loc_ukr update_loc_bg update_loc_de update_loc_en update_loc_es update_loc_hu update_backup update_reginfo update_checkmd5 update_emergency update_dev-key update_PublicKeys-dg update_k3-3.1-create_updater update_k3g-3.1-create_updater update_k3w-3.1-create_updater update_vanhoadevkeys update_kindle_3.1_custom_kernel update_kindle_3.3_custom_kernel update_usertts update_readabilitymod update_jarextractor"
+#fi
+#
+## Trap updates by default
+#want_trap_update="true"
+#
+#for wl_hackname in ${wl_hack_list} ; do
+#    for us_binfile in /mnt/us/*pdate*.bin ; do
+#        case "${us_binfile##*/}" in
+#            ${wl_hackname}*.bin )
+#                # Don't trap our own hacks' update files
+#                kh_msg "skipping the trap of update binfile (${us_binfile##*/}) because it matches '${wl_hackname}'" I q "skip trap for ${wl_hackname}"
+#                want_trap_update="false"
+#            ;;
+#        esac
+#    done
+#done
+#
+## Do we have something to trap?
+#if [ "${want_trap_update}" == "true" ] ; then
+#    # Found one! Make a copy of it :) Only if we don't already have one from unlinkfonts ;)
+#    if [ -f "${us_binfile}" -a ! -f "${LINKSS_BASEDIR}/${us_binfile##*/}" -a ! -f "${LINKFONTS_BASEDIR}/${us_binfile##*/}" ] ; then
+#        kh_msg "trapping update binfile (${us_binfile##*/})" I a "trapping ${us_binfile##*/}"
+#        cp -f "${us_binfile}" "${LINKSS_BASEDIR}/${us_binfile##*/}"
+#    fi
+#fi
+
+# Kill our optionnal watchdog
+if [ -f ${WATCHDOG_PID} ] ; then
+    kh_msg "start of USB watchdog kills" I q
+    # Can't use start-stop-daemon -K, we've got the bash loop, the watchdog daemon and its helper to kill.
+    for pid in $( cat ${WATCHDOG_PID} ) ; do
+        # Check that's it's really one of our own process before killing it mercilessly :p
+        if ps -fp ${pid} | grep -q -e "${WATCHDOG_DAEMON}" -e "usbPlugOut" -e "${WATCHDOG_HELPER}" ; then
+            kh_msg "killing USB watchdog process (${pid})" I
+            kill -TERM ${pid} 2> /dev/null
+        fi
+    done
+    kh_msg "end of USB watchdog kills" I q
+    # And remove the stale pidfile
+    [ -f ${WATCHDOG_PID} ] && rm -f ${WATCHDOG_PID}
+fi
+
+# Same thing for the cover watchdog
+if [ -f ${COVER_WATCHDOG_PID} ] ; then
+    kh_msg "start of cover watchdog kills" I q
+    # Can't use start-stop-daemon -K, we've got the bash loop, the watchdog daemon and its helper to kill.
+    for pid in $( cat ${COVER_WATCHDOG_PID} ) ; do
+        # Check that's it's really one of our own process before killing it mercilessly :p
+        if ps -fp ${pid} | grep -q -e "${COVER_WATCHDOG_DAEMON}" -e "${COVERWD_INWAIT_BIN}" -e "${COVER_WATCHDOG_HELPER}" ; then
+            kh_msg "killing cover watchdog process (${pid})" I
+            kill -TERM ${pid} 2> /dev/null
+        fi
+    done
+    kh_msg "end of cover watchdog kills" I q
+    # And remove the stale pidfile
+    [ -f ${COVER_WATCHDOG_PID} ] && rm -f ${COVER_WATCHDOG_PID}
+fi
+
+# Same thing for the ss watchdog
+if [ -f ${SS_WATCHDOG_PID} ] ; then
+    kh_msg "start of SS watchdog kills" I q
+    # Can't use start-stop-daemon -K, we've got the bash loop, the watchdog daemon and its helper to kill.
+    for pid in $( cat ${SS_WATCHDOG_PID} ) ; do
+        # Check that's it's really one of our own process before killing it mercilessly :p
+        if ps -fp ${pid} | grep -q -e "${SS_WATCHDOG_DAEMON}" -e "goingToScreenSaver" -e "${SS_WATCHDOG_HELPER}" ; then
+            kh_msg "killing SS watchdog process (${pid})" I
+            kill -TERM ${pid} 2> /dev/null
+        fi
+    done
+    kh_msg "end of SS watchdog kills" I q
+    # And remove the stale pidfile
+    [ -f ${SS_WATCHDOG_PID} ] && rm -f ${SS_WATCHDOG_PID}
+fi
+
+# Same thing for the userstore watchdog
+if [ -f ${US_WATCHDOG_PID} ] ; then
+    kh_msg "start of userstore watchdog kills" I q
+    # Can't use start-stop-daemon -K, we've got the bash loop, the watchdog daemon and its helper to kill.
+    for pid in $( cat ${US_WATCHDOG_PID} ) ; do
+        # Check that's it's really one of our own process before killing it mercilessly :p
+        if ps -fp ${pid} | grep -q -e "${US_WATCHDOG_DAEMON}" -e "userstoreAvailable" -e "${US_WATCHDOG_HELPER}" ; then
+            kh_msg "killing userstore watchdog process (${pid})" I
+            kill -TERM ${pid} 2> /dev/null
+        fi
+    done
+    kh_msg "end of userstore watchdog kills" I q
+    # And remove the stale pidfile
+    [ -f ${US_WATCHDOG_PID} ] && rm -f ${US_WATCHDOG_PID}
+fi
+
+# Do we have stuff to unmount?
+# Handle both k2 & kDX
+for kx_size in ${K2_SCREEN_SIZE} ${KDX_SCREEN_SIZE} ; do
+    # Use a slighty less long indicator than the resolution in the eips messages, to alleviate our limited screen estate...
+    if [ "${kx_size}" == "${KDX_SCREEN_SIZE}" ] ; then
+        screen_tag="dx"
+    else
+        screen_tag="k2"
+    fi
+
+    if [ -f ${LINKSS_BASEDIR}/mounted_${kx_size} ] ; then
+        kh_msg "unmounting custom ${screen_tag} screensavers" I
+        umount -l /opt/amazon/screen_saver/${kx_size}
+
+        # And we're good!
+        rm -f ${LINKSS_BASEDIR}/mounted_${kx_size}
+    fi
+    # Handle the tmpfs variant, too (separately, to be safe, and log it differently..)
+    if [ -f ${LINKSS_BASEDIR}/mounted_${kx_size}_tmpfs ] ; then
+        kh_msg "unmounting custom ${screen_tag} screensavers from tmpfs" I
+        umount -l /opt/amazon/screen_saver/${kx_size}
+
+        # And we're good!
+        rm -f ${LINKSS_BASEDIR}/mounted_${kx_size}_tmpfs
+    fi
+done
+
+# And finally, the tmpfs itself
+if [ -f ${LINKSS_BASEDIR}/mounted_tmpfs ] ; then
+    kh_msg "unmounting screensavers tmpfs" I
+    umount -l ${LINKSS_TMPFS_BASEDIR}
+
+    # And we're good!
+    rm -f ${LINKSS_BASEDIR}/mounted_tmpfs
+fi
+
+# Do we have a custom version tag to unmount?
+if [ -f ${LINKSS_BASEDIR}/ver_mounted ] ; then
+    kh_msg "unmounting custom version tag" I
+    umount -l /etc/prettyversion.txt
+
+    # And we're good!
+    rm -f ${LINKSS_BASEDIR}/ver_mounted
+fi

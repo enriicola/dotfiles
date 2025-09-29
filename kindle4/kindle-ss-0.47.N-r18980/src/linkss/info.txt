@@ -1,0 +1,10 @@
+$Id: info.txt 12249 2015-08-18 21:44:43Z NiLuJe $
+
+Hello! If you're wondering what all this weird stuff on your Kindle is,
+I'm a screen savers hack! There's a good chance that I came from here:
+http://www.mobileread.com/forums/showthread.php?t=88004
+
+I'm at version 0.47.N, so, if you wish to uninstall me, you'll need the
+uninstaller from that version, or from a newer one.
+
+-- NiLuJe
