@@ -24,8 +24,8 @@ sudo apt update && sudo apt install vagrant
 vagrant plugin install vagrant-vmware-desktop --plugin-version 3.0.1
 
 # https://support.broadcom.com/group/ecx/productdownloads?subfamily=VMware+Workstation+Pro&tab=Solutions
-sudo ./vcc/VMware-Workstation-Full-17.6.2-24409262.x86_64.bundle
-sudo ./vcc/code_1.99.2-1744250061_amd64.deb
+sudo ./VMware-Workstation-Full-17.6.2-24409262.x86_64.bundle
+# sudo ./vcc/code_1.99.2-1744250061_amd64.deb
 
 sudo mkdir -p /opt/vagrant-vmware-desktop/certificates
 
