@@ -1,0 +1,10 @@
+bind 'set completion-ignore-case on'
+bind 'set colored-stats on'
+bind 'set colored-completion-prefix on'
+bind 'TAB:menu-complete'
+
+# Shift+Tab to cycle backwards
+bind '"\e[Z": menu-complete-backward'
+
+# Display the list immediately (optional but recommended)
+bind 'set show-all-if-ambiguous on'
