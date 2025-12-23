@@ -14,6 +14,7 @@ for dir in "$DESKTOP_PATH"/*; do
     if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
       echo "Running git status in $dir"
       git status -s
+      git pull
       echo "-----------------------------------"
     fi
   fi
@@ -22,5 +23,6 @@ done
 cd ~/Documents
 echo "Running git status in $PWD"
 git status -s
+git pull
 echo "-----------------------------------"
 
