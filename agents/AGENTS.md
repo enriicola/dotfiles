@@ -93,6 +93,31 @@ copilot claude codex gemini cursor
 - keep it simple: develop one thing at a time
 - keep it simple: avoid overengineering
 - keep it simple: avoid adding unnecessary dependencies
+- you can run these commands without asking for confirmation:
+
+```bash
+ls
+grep
+echo
+ps
+cat
+less
+more
+head
+tail
+cd
+pwd
+mkdir
+git status
+git add 
+git commit
+git pull
+git fetch
+git --version
+git log
+git diff
+git config --list
+```
 
 ## Important Reminders
 
