@@ -4,8 +4,7 @@ import platform
 from bs4 import BeautifulSoup
 
 # --- CONFIGURATION ---
-# The file you uploaded (must be in the same folder as this script)
-HTML_FILENAME = "plugins.html"
+WIKI_URL = "https://github.com/qbittorrent/search-plugins/wiki/Unofficial-search-plugins"
 # ---------------------
 
 def get_plugins_dir():
@@ -36,19 +35,14 @@ def to_raw_url(url):
 def install():
     save_dir = get_plugins_dir()
     
-    # 1. Check if HTML file exists
-    if not os.path.exists(HTML_FILENAME):
-        print(f"❌ Error: Could not find file: '{HTML_FILENAME}'")
-        print("   Make sure the HTML file is in the SAME folder as this script.")
-        return
-
-    # 2. Parse the HTML
-    print(f"📂 Reading: {HTML_FILENAME}...")
+    # 1. Fetch the HTML
+    print(f"🌐 Fetching plugins list from: {WIKI_URL}...")
     try:
-        with open(HTML_FILENAME, "r", encoding="utf-8", errors="ignore") as f:
-            soup = BeautifulSoup(f, "html.parser")
+        response = requests.get(WIKI_URL, timeout=10)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, "html.parser")
     except Exception as e:
-        print(f"❌ Error reading file: {e}")
+        print(f"❌ Error fetching URL: {e}")
         return
 
     # 3. Find all links ending in .py
