@@ -1,9 +1,0 @@
-/* Hide the minimize and maximize buttons */
-button.window-maximize, button.window-minimize {
-  display: none !important;
-}
-
-/* Hide the close button */
-button.window-close {
-  display: none !important;
-}
