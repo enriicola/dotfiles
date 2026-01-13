@@ -1,0 +1,10 @@
+[[mgr.prepend_keymap]]
+on   = [ "u" ]
+run  = "shell 'trash-restore' --block --confirm"
+desc = "Restore trashed files"
+
+[[mgr.prepend_keymap]]
+on   = [ "d" ]
+run  = "remove --force"
+desc = "Trash a file without confirmation"
+
