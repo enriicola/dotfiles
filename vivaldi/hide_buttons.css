@@ -1,0 +1,13 @@
+/* Only hide the Minimize, Maximize, and Close buttons */
+.window-buttongroup {
+    display: none !important;
+}
+
+/* Optional: Removes the empty padding on the right where the buttons lived */
+#tabs-container.top {
+    padding-right: 0px !important;
+}
+
+.toolbar-tabbar {
+    padding-right: 0px !important;
+}
