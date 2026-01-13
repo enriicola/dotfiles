@@ -1,0 +1,112 @@
+@import "../omarchy/current/theme/waybar.css";
+
+* {
+  background-color: @background;
+  color: @foreground;
+
+  border: none;
+  min-height: 0;
+  font-family: "CaskaydiaMono Nerd Font";
+  font-size: 12px;
+}
+
+.modules-left {
+  margin-left: 8px;
+}
+
+.modules-right {
+  margin-right: 8px;
+}
+
+#workspaces button {
+  all: initial;
+  padding: 0 6px;
+  margin: 0 1.5px;
+  min-width: 9px;
+}
+
+#workspaces button.empty {
+  opacity: 0.5;
+}
+
+#cpu,
+#battery,
+#pulseaudio,
+#custom-omarchy,
+#custom-screenrecording-indicator,
+#custom-update,
+#custom-hyprsunset {
+  min-width: 12px;
+  margin: 0 7.5px;
+}
+
+#tray {
+  margin: 0 7.5px;
+}
+
+#bluetooth {
+  margin: 0 7.5px;
+}
+
+#network {
+  margin: 0 7.5px;
+}
+
+#custom-expand-icon {
+  margin-right: 18px;
+}
+
+tooltip {
+  padding: 2px;
+}
+
+#custom-update {
+  font-size: 10px;
+}
+
+#clock {
+  margin-left: 5px;
+}
+
+.hidden {
+  opacity: 0;
+}
+
+#custom-screenrecording-indicator {
+  min-width: 12px;
+  margin-left: 5px;
+  font-size: 10px;
+  padding-bottom: 1px;
+}
+
+#custom-screenrecording-indicator.active {
+  color: #a55555;
+}
+
+/* Simple Highlight for Active/Visible Workspaces */
+#workspaces button.active, 
+#workspaces button.visible {
+    background: transparent;
+    border-bottom: 2px solid #cdd6f4; /* Underline highlight */
+    padding-bottom: 2px;
+    border-radius: 0;
+}
+
+#workspaces button.active label, 
+#workspaces button.visible label {
+    color: #cdd6f4;
+    font-weight: bold;
+}
+
+#custom-voxtype {
+  min-width: 12px;
+  margin: 0 0 0 7.5px;
+}
+
+#custom-voxtype.recording {
+  color: #a55555;
+}
+
+#custom-hyprsunset.active {
+  color: #fab387;
+}
