@@ -1,0 +1,22 @@
+[Groups/0]
+# Group Name
+Name=Default
+# Layout
+Default Layout=it
+# Default Input Method
+DefaultIM=keyboard-it
+
+[Groups/0/Items/0]
+# Name
+Name=keyboard-it
+# Layout
+Layout=
+
+[Groups/0/Items/1]
+# Name
+Name=keyboard-us
+# Layout
+Layout=
+
+[GroupOrder]
+0=Default
