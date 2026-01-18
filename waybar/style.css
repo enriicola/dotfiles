@@ -23,6 +23,22 @@
   padding: 0 6px;
   margin: 0 1.5px;
   min-width: 9px;
+  color: alpha(@foreground, 0.4);
+}
+
+#workspaces button.active {
+    color: @foreground;
+    border-bottom: 2px solid @foreground;
+    padding-bottom: 2px;
+}
+
+#workspaces button.visible {
+    color: @foreground;
+}
+
+#workspaces button.active label, 
+#workspaces button.visible label {
+    font-weight: bold;
 }
 
 #workspaces button.empty {
@@ -81,21 +97,6 @@ tooltip {
 
 #custom-screenrecording-indicator.active {
   color: #a55555;
-}
-
-/* Simple Highlight for Active/Visible Workspaces */
-#workspaces button.active, 
-#workspaces button.visible {
-    background: transparent;
-    border-bottom: 2px solid #cdd6f4; /* Underline highlight */
-    padding-bottom: 2px;
-    border-radius: 0;
-}
-
-#workspaces button.active label, 
-#workspaces button.visible label {
-    color: #cdd6f4;
-    font-weight: bold;
 }
 
 #custom-voxtype {
