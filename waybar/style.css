@@ -34,6 +34,8 @@
 
 #workspaces button.visible {
     color: @foreground;
+    border-bottom: 2px solid @foreground;
+    padding-bottom: 2px;
 }
 
 #workspaces button.active label, 

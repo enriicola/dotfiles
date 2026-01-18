@@ -44,7 +44,8 @@
       "5": "5"
     },
     "persistent-workspaces": {
-      "*": [1, 2, 3, 4, 5]
+      "eDP-1": [1],
+      "HDMI-A-1": [2, 3, 4, 5]
     }
   },
   "custom/omarchy": {
