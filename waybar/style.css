@@ -53,9 +53,14 @@
 #custom-omarchy,
 #custom-screenrecording-indicator,
 #custom-update,
-#custom-hyprsunset {
+#custom-hyprsunset,
+#custom-caffeine {
   min-width: 12px;
   margin: 0 7.5px;
+}
+
+#custom-caffeine.active {
+  color: #fab387;
 }
 
 #tray {

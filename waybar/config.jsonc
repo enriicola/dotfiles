@@ -14,6 +14,7 @@
     "custom/screenrecording-indicator"
   ],
   "modules-right": [
+    "custom/caffeine",
     "custom/hyprsunset",
     "tray",
     "bluetooth",
@@ -22,6 +23,18 @@
     "cpu",
     "battery"
   ],
+  "custom/caffeine": {
+    "exec": "~/.config/waybar/scripts/caffeine.sh status",
+    "return-type": "json",
+    "interval": 3,
+    "format": "{icon}",
+    "format-icons": {
+      "on": "",
+      "off": ""
+    },
+    "on-click": "~/.config/waybar/scripts/caffeine.sh toggle",
+    "signal": 9
+  },
   "custom/hyprsunset": {
     "format": "{}",
     "return-type": "json",
