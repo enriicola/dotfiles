@@ -68,6 +68,10 @@
   margin: 0 7.5px;
 }
 
+#tray > .fcitx {
+  margin: 0 5px;
+}
+
 #bluetooth {
   margin: 0 7.5px;
 }
