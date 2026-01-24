@@ -1,0 +1,11 @@
+#!/bin/bash
+
+TEMP=3005
+
+if pgrep -x hyprsunset; then
+  pkill -x hyprsunset
+  notify-send "  Daylight"
+else
+  uwsm-app -- hyprsunset -t $TEMP >/dev/null 2>&1 &
+  notify-send "  Nightlight: ${TEMP}K"
+fi
