@@ -14,6 +14,7 @@
     "custom/screenrecording-indicator"
   ],
   "modules-right": [
+    "custom/hyprsunset",
     "custom/hypridle",
     "tray",
     "bluetooth",
@@ -50,6 +51,13 @@
     "tooltip-format": "Omarchy update available",
     "signal": 7,
     "interval": 21600
+  },
+  "custom/hyprsunset": {
+    "format": "{}",
+    "exec": "if pgrep -x hyprsunset >/dev/null; then echo '{\"text\":\"🌙\",\"class\":\"active\",\"tooltip\":\"Night Light On\"}'; else echo '{\"text\":\"☀️\",\"class\":\"inactive\",\"tooltip\":\"Night Light Off\"}'; fi",
+    "on-click": "omarchy-toggle-nightlight",
+    "return-type": "json",
+    "interval": 2
   },
   "cpu": {
     "interval": 5,
