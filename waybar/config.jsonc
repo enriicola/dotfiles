@@ -54,7 +54,7 @@
   },
   "custom/hyprsunset": {
     "format": "{}",
-    "exec": "if pgrep -x hyprsunset >/dev/null; then echo '{\"text\":\"🌙\",\"class\":\"active\",\"tooltip\":\"Night Light On\"}'; else echo '{\"text\":\"☀️\",\"class\":\"inactive\",\"tooltip\":\"Night Light Off\"}'; fi",
+    "exec": "temp=$(hyprctl hyprsunset temperature 2>/dev/null | grep -oE '[0-9]+'); [ \"${temp:-6000}\" -lt 6000 ] && echo '{\"text\":\"🌙\",\"class\":\"active\"}' || echo '{\"text\":\"☀️\",\"class\":\"inactive\"}'",
     "on-click": "omarchy-toggle-nightlight",
     "return-type": "json",
     "interval": 2
@@ -148,6 +148,7 @@
     "format-muted": "\ueee8",
     "format-icons": {
       "headphone": "",
+      "headset": "",
       "default": [
         "\uf026",
         "\uf027",
@@ -188,6 +189,18 @@
     "tooltip": true,
     "on-click-right": "omarchy-voxtype-config",
     "on-click": "omarchy-voxtype-model"
+  },
+  "custom/idle-indicator": {
+    "on-click": "omarchy-toggle-idle",
+    "exec": "$OMARCHY_PATH/default/waybar/indicators/idle.sh",
+    "signal": 9,
+    "return-type": "json"
+  },
+  "custom/notification-silencing-indicator": {
+    "on-click": "omarchy-toggle-notification-silencing",
+    "exec": "$OMARCHY_PATH/default/waybar/indicators/notification-silencing.sh",
+    "signal": 10,
+    "return-type": "json"
   },
   "tray": {
     "icon-size": 12,
