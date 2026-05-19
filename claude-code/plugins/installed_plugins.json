@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "plugins": {
+    "andrej-karpathy-skills@karpathy-skills": [
+      {
+        "scope": "user",
+        "installPath": "/home/ubuntu/.claude/plugins/cache/karpathy-skills/andrej-karpathy-skills/1.0.0",
+        "version": "1.0.0",
+        "installedAt": "2026-05-19T12:16:34.724Z",
+        "lastUpdated": "2026-05-19T12:16:34.724Z",
+        "gitCommitSha": "2c606141936f1eeef17fa3043a72095b4765b9c2"
+      }
+    ],
+    "caveman@caveman": [
+      {
+        "scope": "user",
+        "installPath": "/home/ubuntu/.claude/plugins/cache/caveman/caveman/18e45320a0b1",
+        "version": "18e45320a0b1",
+        "installedAt": "2026-05-19T12:17:34.253Z",
+        "lastUpdated": "2026-05-19T12:17:34.253Z",
+        "gitCommitSha": "18e45320a0b1aecc959a807f8568ee44b3aaa055"
+      }
+    ]
+  }
+}
